@@ -8,6 +8,7 @@ use crate::{
     cli,
     lockfile::Lockfile,
     manifest::{self, Manifest},
+    target::Target,
 };
 
 use super::{
@@ -124,33 +125,40 @@ pub fn cmd_check(manifest: &Manifest, root: &Path, avoid_execution: bool, all: b
     }
 
     let src_dir = root.join(SOURCE_DIRECTORY);
+    let target = Target::host();
+    let started = std::time::Instant::now();
 
-    let mut check_command = compiler_command(&src_dir);
-    apply_pkg_args(&mut check_command, &lockfile, root);
+    cli::println_info("Starting", format!(
+        "checks for project (root: `{}`)",
+        root.display()
+    ));
+    cli::println_info("Target", format!("triple `{}`", target.triple));
 
-    check_command.arg(entry_file).arg("--check");
+    let emit_object = manifest.package.r#type != manifest::PackageType::Bin;
 
-    if manifest.package.r#type != manifest::PackageType::Bin {
-        check_command.arg("--emit").arg("OBJ");
-    }
-
-    let check_success = check_command
-        .status()
-        .map(|status| status.success())
-        .unwrap_or_else(|err| cli::exit_with_error(format!("Check command error: {}", err)));
-
-    if !check_success {
+    if !run_check(
+        root,
+        &src_dir,
+        &lockfile,
+        Path::new(entry_file),
+        emit_object,
+    ) {
         std::process::exit(1);
     }
 
-    if all {
-        check_all_modules(root, &src_dir, entry_file, &lockfile);
+    if all && !check_all_modules(root, &src_dir, entry_file, &lockfile) {
+        std::process::exit(1);
     }
+
+    cli::println_info("Check", format!(
+        "all checks passed (in {:.2}s)",
+        started.elapsed().as_secs_f64()
+    ));
 
     lockfile
 }
 
-fn check_all_modules(root: &Path, src_dir: &Path, entry_file: &str, lockfile: &Lockfile) {
+fn check_all_modules(root: &Path, src_dir: &Path, entry_file: &str, lockfile: &Lockfile) -> bool {
     let entry_path = src_dir.join(CHECK_ALL_ENTRY);
 
     let mut modules: BTreeMap<String, Vec<PathBuf>> = BTreeMap::new();
@@ -183,8 +191,9 @@ fn check_all_modules(root: &Path, src_dir: &Path, entry_file: &str, lockfile: &L
         }
     }
 
-    if !imports.is_empty() {
-        check_generated_entry(root, src_dir, &entry_path, &imports, lockfile);
+    if !imports.is_empty() && !check_generated_entry(root, src_dir, &entry_path, &imports, lockfile)
+    {
+        return false;
     }
 
     standalone.sort();
@@ -193,12 +202,12 @@ fn check_all_modules(root: &Path, src_dir: &Path, entry_file: &str, lockfile: &L
     for file in standalone {
         let relative = file.strip_prefix(src_dir).unwrap_or(&file);
 
-        cli::println_info("Checking", relative.to_string_lossy());
-
-        if !run_check(root, src_dir, lockfile, relative) {
-            std::process::exit(1);
+        if !run_check(root, src_dir, lockfile, relative, true) {
+            return false;
         }
     }
+
+    true
 }
 
 fn check_generated_entry(
@@ -207,7 +216,7 @@ fn check_generated_entry(
     entry: &Path,
     modules: &[String],
     lockfile: &Lockfile,
-) {
+) -> bool {
     let mut contents = String::new();
 
     for module in modules {
@@ -223,32 +232,55 @@ fn check_generated_entry(
         ))
     });
 
-    cli::println_info(
-        "Checking",
-        format!("{} module(s) of the project", modules.len()),
-    );
-
-    let success = run_check(root, src_dir, lockfile, entry);
+    let success = run_check(root, src_dir, lockfile, entry, true);
 
     let _ = fs::remove_file(entry);
 
-    if !success {
-        std::process::exit(1);
-    }
+    success
 }
 
-fn run_check(root: &Path, src_dir: &Path, lockfile: &Lockfile, entry: &Path) -> bool {
+fn run_check(
+    root: &Path,
+    src_dir: &Path,
+    lockfile: &Lockfile,
+    entry: &Path,
+    emit_object: bool,
+) -> bool {
     let mut command = compiler_command(src_dir);
     apply_pkg_args(&mut command, lockfile, root);
 
-    command
-        .arg(entry)
-        .arg("--check")
-        .arg("--emit")
-        .arg("OBJ")
-        .status()
-        .map(|status| status.success())
-        .unwrap_or_else(|err| cli::exit_with_error(format!("Check command error: {}", err)))
+    command.arg(entry).arg("--check");
+
+    if emit_object {
+        command.arg("--emit").arg("OBJ");
+    }
+
+    let output = command
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()
+        .unwrap_or_else(|err| cli::exit_with_error(format!("Check command error: {}", err)));
+
+    report_check_output(&output);
+
+    output.status.success()
+}
+
+fn report_check_output(output: &std::process::Output) {
+    for stream in [&output.stdout, &output.stderr] {
+        let text = String::from_utf8_lossy(stream);
+
+        for line in text.lines() {
+            if line.starts_with("Building from ")
+                || line.starts_with("Target triple ")
+                || line.starts_with("Check all checks passed")
+            {
+                continue;
+            }
+
+            eprintln!("{line}");
+        }
+    }
 }
 
 fn source_files(dir: &Path) -> Vec<PathBuf> {
