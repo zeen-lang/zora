@@ -11,7 +11,7 @@ use crate::{cli, manifest::Manifest};
 use super::{apply_pkg_args, cmd_check, compiler_command, load_optional_lockfile};
 
 pub fn cmd_test(manifest: &Manifest, root: &Path) {
-    let _ = cmd_check(manifest, root, true);
+    let _ = cmd_check(manifest, root, true, false);
 
     let found = crate::tests::discover_tests(root);
 

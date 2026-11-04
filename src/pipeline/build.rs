@@ -19,7 +19,7 @@ use super::{
 type RunArtifact = PathBuf;
 
 pub fn cmd_build(args: cli::BuildArgs, manifest: &Manifest, root: &Path) -> Option<RunArtifact> {
-    let lockfile = cmd_check(manifest, root, true);
+    let lockfile = cmd_check(manifest, root, true, false);
     let mode = args.mode.resolve();
 
     // basic dist directory

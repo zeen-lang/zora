@@ -39,8 +39,8 @@ fn main() {
     match args.command {
         cli::Commands::Init(_) | cli::Commands::New(_) => unreachable!(),
 
-        cli::Commands::Check => {
-            let _ = pipeline::cmd_check(&manifest, &root, false);
+        cli::Commands::Check(args) => {
+            let _ = pipeline::cmd_check(&manifest, &root, false, args.all);
         }
 
         cli::Commands::Update => pipeline::cmd_update(&manifest, &root),

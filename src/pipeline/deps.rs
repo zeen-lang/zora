@@ -121,7 +121,7 @@ pub fn cmd_add(args: cli::AddArgs, manifest: &Manifest, root: &Path) {
         );
     }
 
-    let _ = cmd_check(&new_manifest, root, true);
+    let _ = cmd_check(&new_manifest, root, true, false);
 }
 
 pub fn cmd_remove(args: cli::RemoveArgs, manifest: &Manifest, root: &Path) {
@@ -139,7 +139,7 @@ pub fn cmd_remove(args: cli::RemoveArgs, manifest: &Manifest, root: &Path) {
 
     cli::println_info("Removed", format!("dependency `{}`", args.name));
 
-    let _ = cmd_check(&new_manifest, root, true);
+    let _ = cmd_check(&new_manifest, root, true, false);
 }
 
 pub fn cmd_update(manifest: &Manifest, root: &Path) {
@@ -147,7 +147,7 @@ pub fn cmd_update(manifest: &Manifest, root: &Path) {
 
     save_lockfile(root, &new_lockfile);
 
-    let _ = cmd_check(manifest, root, true);
+    let _ = cmd_check(manifest, root, true, false);
 }
 
 pub fn cmd_deps_map(manifest: &Manifest, root: &Path) {

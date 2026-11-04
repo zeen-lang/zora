@@ -50,8 +50,11 @@ pub enum Commands {
     /// Clean build artifacts and caches
     Clean(CleanArgs),
 
-    /// Check project config and source
-    Check,
+    /// Check project config and the entry file
+    #[command(
+        long_about = "Check project config and the entry file. Pass `--all` to check every module in the project."
+    )]
+    Check(CheckArgs),
 
     /// Update lock dependencies from manifest
     Update,
@@ -127,6 +130,17 @@ pub struct CleanArgs {
     /// Clean cached dependencies in global database (usually `~/.zora`)
     #[arg(long)]
     pub global: bool,
+}
+
+/// `zora check` args
+#[derive(Debug, Args)]
+pub struct CheckArgs {
+    /// Check every module of the project, not only the entry file
+    #[arg(
+        long = "all",
+        help = "Check every module of the project, not only the entry file"
+    )]
+    pub all: bool,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -289,6 +303,28 @@ mod tests {
 
         assert_eq!(args.mode.resolve(), CompilationMode::Release);
         assert_eq!(args.program_args, vec!["one", "two"]);
+    }
+
+    #[test]
+    fn check_defaults_to_entry_only() {
+        let cli = Cli::parse_from(["zora", "check"]);
+
+        let Commands::Check(args) = cli.command else {
+            panic!("expected check command");
+        };
+
+        assert!(!args.all);
+    }
+
+    #[test]
+    fn check_all_flag_selects_every_module() {
+        let cli = Cli::parse_from(["zora", "check", "--all"]);
+
+        let Commands::Check(args) = cli.command else {
+            panic!("expected check command");
+        };
+
+        assert!(args.all);
     }
 
     #[test]
