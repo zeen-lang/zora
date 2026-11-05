@@ -1,6 +1,6 @@
 use std::{collections::HashSet, fs, path::Path};
 
-use semver::{Version, VersionReq};
+use semver::{BuildMetadata, Comparator, Op, Version, VersionReq};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use url::Url;
 
@@ -117,7 +117,7 @@ impl Lockfile {
         for (idx, package) in self.package.iter().enumerate() {
             let version_requirement = &package.zeen;
 
-            if !version_requirement.matches(zeen_installed) {
+            if !zeen_requirement_matches(version_requirement, zeen_installed) {
                 return Err(LockValidateError::ZeenMismatch {
                     package: package.name.clone(),
                     required: package.zeen.clone(),
@@ -165,6 +165,29 @@ impl Lockfile {
 
         Ok(())
     }
+}
+
+fn zeen_requirement_matches(requirement: &VersionReq, installed: &Version) -> bool {
+    if requirement.matches(installed) {
+        return true;
+    }
+
+    !requirement.comparators.is_empty()
+        && requirement.comparators.iter().all(|comparator| {
+            comparator.op == Op::Caret && caret_minimum_matches(comparator, installed)
+        })
+}
+
+fn caret_minimum_matches(comparator: &Comparator, installed: &Version) -> bool {
+    let minimum = Version {
+        major: comparator.major,
+        minor: comparator.minor.unwrap_or(0),
+        patch: comparator.patch.unwrap_or(0),
+        pre: comparator.pre.clone(),
+        build: BuildMetadata::EMPTY,
+    };
+
+    installed >= &minimum
 }
 
 pub enum LockValidateError {
