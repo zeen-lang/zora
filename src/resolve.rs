@@ -254,24 +254,24 @@ mod tests {
 
     #[test]
     fn pinned_matches_default_branch() {
-        let url = Url::parse("https://github.com/mealet/zora").unwrap();
-        let locked = pinned("https://github.com/mealet/zora", Some("main"), Some("abc"));
+        let url = Url::parse("https://github.com/zeen-lang/zora").unwrap();
+        let locked = pinned("https://github.com/zeen-lang/zora", Some("main"), Some("abc"));
 
         assert!(pinned_matches(&locked, &url, &None));
     }
 
     #[test]
     fn pinned_rejects_unpinned_default_branch() {
-        let url = Url::parse("https://github.com/mealet/zora").unwrap();
-        let locked = pinned("https://github.com/mealet/zora", None, Some("abc"));
+        let url = Url::parse("https://github.com/zeen-lang/zora").unwrap();
+        let locked = pinned("https://github.com/zeen-lang/zora", None, Some("abc"));
 
         assert!(!pinned_matches(&locked, &url, &None));
     }
 
     #[test]
     fn pinned_matches_named_branch() {
-        let url = Url::parse("https://github.com/mealet/zora").unwrap();
-        let locked = pinned("https://github.com/mealet/zora", Some("dev"), Some("abc"));
+        let url = Url::parse("https://github.com/zeen-lang/zora").unwrap();
+        let locked = pinned("https://github.com/zeen-lang/zora", Some("dev"), Some("abc"));
 
         assert!(pinned_matches(&locked, &url, &Some("dev".to_owned())));
         assert!(!pinned_matches(&locked, &url, &Some("main".to_owned())));
@@ -280,8 +280,8 @@ mod tests {
     #[test]
     fn pinned_matches_commit_hash() {
         let hash = "0123456789abcdef0123456789abcdef01234567";
-        let url = Url::parse("https://github.com/mealet/zora").unwrap();
-        let locked = pinned("https://github.com/mealet/zora", None, Some(hash));
+        let url = Url::parse("https://github.com/zeen-lang/zora").unwrap();
+        let locked = pinned("https://github.com/zeen-lang/zora", None, Some(hash));
 
         assert!(pinned_matches(&locked, &url, &Some(hash.to_owned())));
     }
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn pinned_rejects_different_repository() {
         let url = Url::parse("https://github.com/other/repo").unwrap();
-        let locked = pinned("https://github.com/mealet/zora", Some("main"), Some("abc"));
+        let locked = pinned("https://github.com/zeen-lang/zora", Some("main"), Some("abc"));
 
         assert!(!pinned_matches(&locked, &url, &None));
     }

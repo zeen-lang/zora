@@ -104,7 +104,7 @@ pub fn verify_zeen_installed() -> (Version, VersionReq) {
             }
 
             cli::exit_with_error(
-                "Unable to extract Zeen version, please report this: https://github.com/mealet/zora",
+                "Unable to extract Zeen version, please report this: https://github.com/zeen-lang/zora",
             );
         }
         _ => {
