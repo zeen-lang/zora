@@ -4,7 +4,7 @@ use semver::{BuildMetadata, Comparator, Op, Version, VersionReq};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use url::Url;
 
-use crate::manifest::{Build, LoadError, Manifest};
+use crate::manifest::{Build, LoadError, Manifest, serialize_zeen_requirement};
 
 pub const LOCKFILE_CONFIG: &str = "Zora.lock";
 pub const SUPPORTED_LOCK_VERSION: u32 = 3;
@@ -19,6 +19,7 @@ pub struct Lockfile {
 pub struct LockPackage {
     pub name: String,
     pub version: Version,
+    #[serde(serialize_with = "serialize_zeen_requirement")]
     pub zeen: VersionReq,
     #[serde(
         deserialize_with = "deserialize_dependencies",

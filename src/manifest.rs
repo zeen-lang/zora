@@ -1,5 +1,5 @@
 use semver::{Version, VersionReq};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Display,
@@ -22,6 +22,7 @@ pub struct Manifest {
 pub struct Package {
     pub name: String,
     pub version: Version,
+    #[serde(serialize_with = "serialize_zeen_requirement")]
     pub zeen: VersionReq,
     pub r#type: PackageType,
 
@@ -29,6 +30,18 @@ pub struct Package {
     pub description: Option<String>,
     pub repository: Option<Url>,
     pub license: Option<String>,
+}
+
+pub(crate) fn serialize_zeen_requirement<S>(
+    requirement: &VersionReq,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let text = requirement.to_string();
+
+    serializer.serialize_str(text.strip_prefix('^').unwrap_or(&text))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
