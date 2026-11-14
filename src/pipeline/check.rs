@@ -128,10 +128,10 @@ pub fn cmd_check(manifest: &Manifest, root: &Path, avoid_execution: bool, all: b
     let target = Target::host();
     let started = std::time::Instant::now();
 
-    cli::println_info("Starting", format!(
-        "checks for project (root: `{}`)",
-        root.display()
-    ));
+    cli::println_info(
+        "Starting",
+        format!("checks for project (root: `{}`)", root.display()),
+    );
     cli::println_info("Target", format!("triple `{}`", target.triple));
 
     let emit_object = manifest.package.r#type != manifest::PackageType::Bin;
@@ -150,10 +150,13 @@ pub fn cmd_check(manifest: &Manifest, root: &Path, avoid_execution: bool, all: b
         std::process::exit(1);
     }
 
-    cli::println_info("Check", format!(
-        "all checks passed (in {:.2}s)",
-        started.elapsed().as_secs_f64()
-    ));
+    cli::println_info(
+        "Check",
+        format!(
+            "all checks passed (in {:.2}s)",
+            started.elapsed().as_secs_f64()
+        ),
+    );
 
     lockfile
 }
